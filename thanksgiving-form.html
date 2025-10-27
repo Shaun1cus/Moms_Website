@@ -227,6 +227,49 @@
             statusMessage.innerHTML = '';
 
             try {
+                // Get form data first to check for duplicates
+                const formData = new FormData(form);
+                const emailAddress = formData.get('emailAddress');
+                const phoneNumber = formData.get('phoneNumber');
+
+                // Check for duplicate email address
+                const { data: emailCheck, error: emailError } = await supabase
+                    .from('family_submissions')
+                    .select('email_address')
+                    .eq('email_address', emailAddress)
+                    .limit(1);
+
+                if (emailError) {
+                    throw new Error('Failed to verify submission. Please try again.');
+                }
+
+                if (emailCheck && emailCheck.length > 0) {
+                    statusMessage.innerHTML = '<div class="message error">An application with this email address has already been submitted. If you believe this is an error, please contact us on Facebook.</div>';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Application';
+                    statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    return;
+                }
+
+                // Check for duplicate phone number
+                const { data: phoneCheck, error: phoneError } = await supabase
+                    .from('family_submissions')
+                    .select('phone_number')
+                    .eq('phone_number', phoneNumber)
+                    .limit(1);
+
+                if (phoneError) {
+                    throw new Error('Failed to verify submission. Please try again.');
+                }
+
+                if (phoneCheck && phoneCheck.length > 0) {
+                    statusMessage.innerHTML = '<div class="message error">An application with this phone number has already been submitted. If you believe this is an error, please contact us on Facebook.</div>';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Application';
+                    statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    return;
+                }
+
                 // Check current submission count
                 const { count, error: countError } = await supabase
                     .from('family_submissions')
@@ -244,8 +287,7 @@
                     return;
                 }
 
-                // Get form data
-                const formData = new FormData(form);
+                // Prepare data for submission
                 const data = {
                     family_name: formData.get('familyName'),
                     number_of_adults: parseInt(formData.get('numberOfAdults')),
@@ -253,8 +295,8 @@
                     street_address: formData.get('streetAddress'),
                     city: formData.get('city'),
                     zip_code: formData.get('zipCode'),
-                    phone_number: formData.get('phoneNumber'),
-                    email_address: formData.get('emailAddress')
+                    phone_number: phoneNumber,
+                    email_address: emailAddress
                 };
 
                 // Submit to Supabase
@@ -275,7 +317,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                statusMessage.innerHTML = '<div class="message error">An error occurred while submitting your application. Please try again.</div>';
+                statusMessage.innerHTML = '<div class="message error">An error occurred while submitting your application. Please try again or contact us on Facebook.</div>';
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit Application';
