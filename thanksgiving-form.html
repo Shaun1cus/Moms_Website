@@ -218,6 +218,46 @@
         const form = document.getElementById('thanksgivingForm');
         const submitBtn = document.getElementById('submitBtn');
         const statusMessage = document.getElementById('statusMessage');
+        const formContainer = document.querySelector('.form-container');
+
+        // Check submission limit on page load
+        async function checkSubmissionLimit() {
+            try {
+                const { count, error: countError } = await supabase
+                    .from('family_submissions')
+                    .select('*', { count: 'exact', head: true });
+
+                if (countError) {
+                    console.error('Error checking limit:', countError);
+                    return;
+                }
+
+                // If limit reached (500 submissions), replace form with message
+                if (count !== null && count >= 500) {
+                    formContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px 20px;">
+                            <h2 style="color: #3b3a30; margin-bottom: 20px;">Submissions Closed</h2>
+                            <p style="font-size: 1.1em; line-height: 1.8; color: #3b3a30; margin-bottom: 30px;">
+                                We have reached the limit of the submissions we are able to receive at this time. 
+                                For any further assistance we are able to provide, please keep an eye on our Facebook. 
+                                Happy Thanksgiving!
+                            </p>
+                            <a href="https://www.facebook.com/groups/343793369162470" 
+                               class="btn-facebook" 
+                               target="_blank" 
+                               rel="noopener noreferrer">
+                                Visit Our Facebook Group
+                            </a>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Run check on page load
+        checkSubmissionLimit();
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
