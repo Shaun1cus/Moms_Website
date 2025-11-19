@@ -668,6 +668,14 @@
                     .insert(childrenData);
 
                 if (childrenError) {
+                    // Check if it's a limit error from the database trigger
+                    if (childrenError.message && childrenError.message.includes('limit reached')) {
+                        statusMessage.innerHTML = '<div class="message error">TESTING LIMIT REACHED: We have reached the maximum number of children submissions for testing. The form is temporarily closed.</div>';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Submit Application';
+                        statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        return;
+                    }
                     throw childrenError;
                 }
 
@@ -683,7 +691,16 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                statusMessage.innerHTML = '<div class="message error">An error occurred while submitting your application. Please try again or contact us on Facebook.</div>';
+                console.error('Error details:', JSON.stringify(error, null, 2));
+                
+                // Check if it's a limit-related error
+                const errorMessage = error?.message || error?.error_description || error?.msg || '';
+                if (errorMessage.toLowerCase().includes('limit')) {
+                    statusMessage.innerHTML = '<div class="message error">TESTING LIMIT REACHED: The submission limit has been reached. The form is temporarily closed.</div>';
+                } else {
+                    statusMessage.innerHTML = '<div class="message error">An error occurred while submitting your application. Please try again or contact us on Facebook.</div>';
+                }
+                statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit Application';
