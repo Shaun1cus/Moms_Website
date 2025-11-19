@@ -557,7 +557,7 @@
                 }
 
                 // Check total children count (limit: 5 children)
-                const { count: childCount, error: childCountError } = await supabase
+                const { count: totalChildrenCount, error: childCountError } = await supabase
                     .from('christmas_children')
                     .select('*', { count: 'exact', head: true });
 
@@ -565,7 +565,7 @@
                     throw new Error('Failed to verify submission limit. Please try again.');
                 }
 
-                if (childCount !== null && childCount >= 5) {
+                if (totalChildrenCount !== null && totalChildrenCount >= 5) {
                     statusMessage.innerHTML = '<div class="message error">TESTING LIMIT REACHED: We have reached the maximum number of children submissions for testing (5 children). The form is temporarily closed.</div>';
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Submit Application';
