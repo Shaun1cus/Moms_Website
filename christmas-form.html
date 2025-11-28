@@ -362,6 +362,20 @@
         </div>
     </main>
 
+    <!-- Warning Modal -->
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #dc3545;">⚠️ WARNING</h3>
+            <p>
+                If you proceed, you cannot go back. Please ensure that all information is entered correctly before proceeding.
+            </p>
+            <div class="modal-buttons">
+                <button type="button" class="modal-btn modal-btn-cancel" id="warningCancelBtn">Cancel</button>
+                <button type="button" class="modal-btn modal-btn-confirm" id="warningContinueBtn">Continue</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Disclaimer Modal -->
     <div id="disclaimerModal" class="modal">
         <div class="modal-content">
@@ -412,6 +426,9 @@
         const statusMessage = document.getElementById('statusMessage');
         const childrenContainer = document.getElementById('childrenContainer');
         const addChildBtn = document.getElementById('addChildBtn');
+        const warningModal = document.getElementById('warningModal');
+        const warningCancelBtn = document.getElementById('warningCancelBtn');
+        const warningContinueBtn = document.getElementById('warningContinueBtn');
         const disclaimerModal = document.getElementById('disclaimerModal');
         const cancelBtn = document.getElementById('cancelBtn');
         const confirmBtn = document.getElementById('confirmBtn');
@@ -495,7 +512,20 @@
         // Add first child by default
         addChild();
 
-        // Modal event handlers
+        // Warning Modal event handlers
+        warningCancelBtn.addEventListener('click', () => {
+            warningModal.classList.remove('show');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Application';
+        });
+
+        warningContinueBtn.addEventListener('click', () => {
+            warningModal.classList.remove('show');
+            // Show disclaimer modal next
+            disclaimerModal.classList.add('show');
+        });
+
+        // Disclaimer Modal event handlers
         cancelBtn.addEventListener('click', () => {
             disclaimerModal.classList.remove('show');
             submitBtn.disabled = false;
@@ -508,7 +538,7 @@
             submitApplication();
         });
 
-        // Form submission - show modal first
+        // Form submission - show warning modal first
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -521,10 +551,10 @@
             }
             
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Please Review Disclaimer...';
+            submitBtn.textContent = 'Please Review...';
             
-            // Show the disclaimer modal
-            disclaimerModal.classList.add('show');
+            // Show the warning modal first
+            warningModal.classList.add('show');
         });
 
         // Actual submission function
