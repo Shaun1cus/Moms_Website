@@ -640,6 +640,31 @@
                     return;
                 }
 
+                // Check for duplicate address
+                const streetAddress = formData.get('streetAddress');
+                const city = formData.get('city');
+                const zipCode = formData.get('zipCode');
+                
+                const { data: addressCheck, error: addressError } = await supabase
+                    .from('christmas_families')
+                    .select('street_address, city, zip_code')
+                    .eq('street_address', streetAddress)
+                    .eq('city', city)
+                    .eq('zip_code', zipCode)
+                    .limit(1);
+
+                if (addressError && addressError.code !== 'PGRST116') {
+                    throw new Error('Failed to verify submission. Please try again.');
+                }
+
+                if (addressCheck && addressCheck.length > 0) {
+                    statusMessage.innerHTML = '<div class="message error">An application from this address has already been submitted. If you believe this is an error, please contact us on Facebook.</div>';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Application';
+                    statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    return;
+                }
+
                 // Collect children data
                 const children = [];
                 const childEntries = document.querySelectorAll('.child-entry');
