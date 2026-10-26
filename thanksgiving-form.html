@@ -220,58 +220,17 @@
         const submitBtn = document.getElementById('submitBtn');
         const statusMessage = document.getElementById('statusMessage');
 
-        form.addEventListener('submit', async (e) => {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Applications Closed';
+        form.querySelectorAll('input, button').forEach((element) => {
+            element.disabled = true;
+        });
+        statusMessage.innerHTML = '<div class="message error">Thanksgiving applications are currently closed. Please check our Facebook group for updates.</div>';
+
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
-            statusMessage.innerHTML = '';
-
-            try {
-                const formData = new FormData(form);
-                const emailAddress = formData.get('emailAddress');
-                const phoneNumber = formData.get('phoneNumber');
-
-                // Prepare data for submission
-                const data = {
-                    family_name: formData.get('familyName'),
-                    number_of_adults: parseInt(formData.get('numberOfAdults')),
-                    number_of_children: parseInt(formData.get('numberOfChildren')),
-                    street_address: formData.get('streetAddress'),
-                    city: formData.get('city'),
-                    zip_code: formData.get('zipCode'),
-                    phone_number: phoneNumber,
-                    email_address: emailAddress
-                };
-
-                // Submit to Supabase
-                const { error } = await supabase
-                    .from('family_submissions')
-                    .insert([data]);
-
-                if (error) {
-                    throw error;
-                }
-
-                // Success!
-                statusMessage.innerHTML = '<div class="message success">Application submitted successfully! Thank you for applying. We will contact you soon.</div>';
-                form.reset();
-
-                // Scroll to message
-                statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-            } catch (error) {
-                console.error('Error:', error);
-                const limitReached = error && typeof error === 'object'
-                    && 'code' in error && error.code === 'P0001';
-                statusMessage.innerHTML = limitReached
-                    ? '<div class="message error">We have reached our maximum number of submissions. Thank you for your interest!</div>'
-                    : '<div class="message error">An error occurred while submitting your application. Please try again or contact us on Facebook.</div>';
-                statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Application';
-            }
+            statusMessage.innerHTML = '<div class="message error">Thanksgiving applications are currently closed. Please check our Facebook group for updates.</div>';
+            statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
         })();
     </script>

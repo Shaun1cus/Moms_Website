@@ -538,23 +538,23 @@
             submitApplication();
         });
 
+        // Christmas applications are currently closed. Keep the form on the page for reference
+        // but prevent any new submissions.
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Applications Closed';
+        addChildBtn.disabled = true;
+        form.querySelectorAll('input, select, button').forEach((element) => {
+            if (element !== warningCancelBtn && element !== warningContinueBtn && element !== cancelBtn && element !== confirmBtn) {
+                element.disabled = true;
+            }
+        });
+        statusMessage.innerHTML = '<div class="message error">Christmas applications are currently closed. Please check our Facebook group for updates.</div>';
+
         // Form submission - show warning modal first
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            // Validate that at least one child has been added
-            const childEntries = document.querySelectorAll('.child-entry');
-            if (childEntries.length === 0) {
-                statusMessage.innerHTML = '<div class="message error">Please add at least one child to your application.</div>';
-                statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                return;
-            }
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Please Review...';
-            
-            // Show the warning modal first
-            warningModal.classList.add('show');
+            statusMessage.innerHTML = '<div class="message error">Christmas applications are currently closed. Please check our Facebook group for updates.</div>';
+            statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
 
         // Actual submission function
