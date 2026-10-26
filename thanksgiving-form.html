@@ -133,7 +133,7 @@
             <div class="form-container">
                 <div id="statusMessage"></div>
                 
-                <form id="thanksgivingForm">
+                <form id="thanksgivingForm" method="post">
                     <div class="form-group">
                         <label for="familyName">Family Name *</label>
                         <input type="text" id="familyName" name="familyName" required>
@@ -208,26 +208,72 @@
     </footer>
 
     <script>
-        // DATABASE CONNECTION DISABLED - FORM IS CLOSED
-        // Display form closed message immediately
-        const formContainer = document.querySelector('.form-container');
-        if (formContainer) {
-            formContainer.innerHTML = `
-                <div style="text-align: center; padding: 40px 20px;">
-                    <h2 style="color: #3b3a30; margin-bottom: 20px;">Applications Closed</h2>
-                    <p style="font-size: 1.1em; line-height: 1.8; color: #3b3a30; margin-bottom: 30px;">
-                        Thanksgiving applications are now closed. Thank you for your interest!
-                        For any further assistance, please visit our Facebook group.
-                    </p>
-                    <a href="https://www.facebook.com/groups/343793369162470" 
-                       class="btn-facebook" 
-                       target="_blank" 
-                       rel="noopener noreferrer">
-                        Visit Our Facebook Group
-                    </a>
-                </div>
-            `;
-        }
+        (() => {
+        // Supabase credentials
+        const SUPABASE_URL = 'https://fyxsebearstooizcolnw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5eHNlYmVhcnN0b29pemNvbG53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MjgzOTAsImV4cCI6MjA3NjIwNDM5MH0.alg1RGNyDpT8thI-yH_RvgneSKS9ZDk3zirlkf-uhBk';
+
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const form = document.getElementById('thanksgivingForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMessage = document.getElementById('statusMessage');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            statusMessage.innerHTML = '';
+
+            try {
+                const formData = new FormData(form);
+                const emailAddress = formData.get('emailAddress');
+                const phoneNumber = formData.get('phoneNumber');
+
+                // Prepare data for submission
+                const data = {
+                    family_name: formData.get('familyName'),
+                    number_of_adults: parseInt(formData.get('numberOfAdults')),
+                    number_of_children: parseInt(formData.get('numberOfChildren')),
+                    street_address: formData.get('streetAddress'),
+                    city: formData.get('city'),
+                    zip_code: formData.get('zipCode'),
+                    phone_number: phoneNumber,
+                    email_address: emailAddress
+                };
+
+                // Submit to Supabase
+                const { error } = await supabase
+                    .from('family_submissions')
+                    .insert([data]);
+
+                if (error) {
+                    throw error;
+                }
+
+                // Success!
+                statusMessage.innerHTML = '<div class="message success">Application submitted successfully! Thank you for applying. We will contact you soon.</div>';
+                form.reset();
+
+                // Scroll to message
+                statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } catch (error) {
+                console.error('Error:', error);
+                const limitReached = error && typeof error === 'object'
+                    && 'code' in error && error.code === 'P0001';
+                statusMessage.innerHTML = limitReached
+                    ? '<div class="message error">We have reached our maximum number of submissions. Thank you for your interest!</div>'
+                    : '<div class="message error">An error occurred while submitting your application. Please try again or contact us on Facebook.</div>';
+                statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Application';
+            }
+        });
+        })();
     </script>
 </body>
 </html>
