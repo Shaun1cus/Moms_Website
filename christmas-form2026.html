@@ -419,7 +419,7 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5eHNlYmVhcnN0b29pemNvbG53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MjgzOTAsImV4cCI6MjA3NjIwNDM5MH0.alg1RGNyDpT8thI-yH_RvgneSKS9ZDk3zirlkf-uhBk';
 
         // Initialize Supabase client
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const form = document.getElementById('christmasForm');
         const submitBtn = document.getElementById('submitBtn');
@@ -432,6 +432,9 @@
         const disclaimerModal = document.getElementById('disclaimerModal');
         const cancelBtn = document.getElementById('cancelBtn');
         const confirmBtn = document.getElementById('confirmBtn');
+        const isLocalPreview = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const submitButtonLabel = isLocalPreview ? 'Submit Test Application' : 'Submit Application';
+        const localPreviewMessage = 'Local test mode: submitting here creates real records in the existing database.';
 
         let childCount = 0;
         let formDataCache = null;
@@ -516,7 +519,7 @@
         warningCancelBtn.addEventListener('click', () => {
             warningModal.classList.remove('show');
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Application';
+            submitBtn.textContent = submitButtonLabel;
         });
 
         warningContinueBtn.addEventListener('click', () => {
@@ -529,7 +532,7 @@
         cancelBtn.addEventListener('click', () => {
             disclaimerModal.classList.remove('show');
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Application';
+            submitBtn.textContent = submitButtonLabel;
             formDataCache = null;
         });
 
@@ -538,23 +541,16 @@
             submitApplication();
         });
 
-        // Christmas applications are currently closed. Keep the form on the page for reference
-        // but prevent any new submissions.
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Applications Closed';
-        addChildBtn.disabled = true;
-        form.querySelectorAll('input, select, button').forEach((element) => {
-            if (element !== warningCancelBtn && element !== warningContinueBtn && element !== cancelBtn && element !== confirmBtn) {
-                element.disabled = true;
-            }
-        });
-        statusMessage.innerHTML = '<div class="message error">Christmas applications are currently closed. Please check our Facebook group for updates.</div>';
+        submitBtn.disabled = false;
+        submitBtn.textContent = submitButtonLabel;
+        statusMessage.innerHTML = isLocalPreview
+            ? `<div class="message error">${localPreviewMessage}</div>`
+            : '';
 
         // Form submission - show warning modal first
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            statusMessage.innerHTML = '<div class="message error">Christmas applications are currently closed. Please check our Facebook group for updates.</div>';
-            statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            warningModal.classList.add('show');
         });
 
         // Actual submission function
@@ -568,42 +564,27 @@
                 const emailAddress = formData.get('emailAddress');
                 const phoneNumber = formData.get('phoneNumber');
 
-                // Check total family count (limit: 500 families)
-                const { count: familyCount, error: familyCountError } = await supabase
-                    .from('christmas_families')
-                    .select('*', { count: 'exact', head: true });
+                const childEntries = document.querySelectorAll('.child-entry');
 
-                if (familyCountError) {
-                    throw new Error('Failed to verify submission limit. Please try again.');
-                }
-
-                if (familyCount !== null && familyCount >= 500) {
-                    statusMessage.innerHTML = '<div class="message error">We have reached our maximum capacity for Christmas applications at this time. Thank you for your interest. Please check our Facebook page for updates.</div>';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit Application';
-                    statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    return;
-                }
-
-                // Check total children count (limit: 2000 children)
-                const { count: totalChildrenCount, error: childCountError } = await supabase
+                // Check total children count (limit: 1000 children)
+                const { count: totalChildrenCount, error: childCountError } = await supabaseClient
                     .from('christmas_children')
                     .select('*', { count: 'exact', head: true });
 
-                if (childCountError) {
+                if (childCountError || totalChildrenCount === null) {
                     throw new Error('Failed to verify submission limit. Please try again.');
                 }
 
-                if (totalChildrenCount !== null && totalChildrenCount >= 2000) {
+                if (totalChildrenCount + childEntries.length > 1000) {
                     statusMessage.innerHTML = '<div class="message error">We have reached our maximum capacity for Christmas applications at this time. Thank you for your interest. Please check our Facebook page for updates.</div>';
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit Application';
+                    submitBtn.textContent = submitButtonLabel;
                     statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     return;
                 }
 
                 // Check for duplicate email address
-                const { data: emailCheck, error: emailError } = await supabase
+                const { data: emailCheck, error: emailError } = await supabaseClient
                     .from('christmas_families')
                     .select('email_address')
                     .eq('email_address', emailAddress)
@@ -616,13 +597,13 @@
                 if (emailCheck && emailCheck.length > 0) {
                     statusMessage.innerHTML = '<div class="message error">An application with this email address has already been submitted. If you believe this is an error, please contact us on Facebook.</div>';
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit Application';
+                    submitBtn.textContent = submitButtonLabel;
                     statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     return;
                 }
 
                 // Check for duplicate phone number
-                const { data: phoneCheck, error: phoneError } = await supabase
+                const { data: phoneCheck, error: phoneError } = await supabaseClient
                     .from('christmas_families')
                     .select('phone_number')
                     .eq('phone_number', phoneNumber)
@@ -635,7 +616,7 @@
                 if (phoneCheck && phoneCheck.length > 0) {
                     statusMessage.innerHTML = '<div class="message error">An application with this phone number has already been submitted. If you believe this is an error, please contact us on Facebook.</div>';
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit Application';
+                    submitBtn.textContent = submitButtonLabel;
                     statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     return;
                 }
@@ -645,7 +626,7 @@
                 const city = formData.get('city');
                 const zipCode = formData.get('zipCode');
                 
-                const { data: addressCheck, error: addressError } = await supabase
+                const { data: addressCheck, error: addressError } = await supabaseClient
                     .from('christmas_families')
                     .select('street_address, city, zip_code')
                     .eq('street_address', streetAddress)
@@ -660,14 +641,13 @@
                 if (addressCheck && addressCheck.length > 0) {
                     statusMessage.innerHTML = '<div class="message error">An application from this address has already been submitted. If you believe this is an error, please contact us on Facebook.</div>';
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit Application';
+                    submitBtn.textContent = submitButtonLabel;
                     statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     return;
                 }
 
                 // Collect children data
                 const children = [];
-                const childEntries = document.querySelectorAll('.child-entry');
                 
                 childEntries.forEach((entry) => {
                     const childId = entry.dataset.childId;
@@ -693,7 +673,7 @@
                 };
 
                 // Step 1: Insert family and get the family ID
-                const { data: familyResult, error: familyError } = await supabase
+                const { data: familyResult, error: familyError } = await supabaseClient
                     .from('christmas_families')
                     .insert([familyData])
                     .select();
@@ -716,7 +696,7 @@
                     age: child.age
                 }));
 
-                const { error: childrenError } = await supabase
+                const { error: childrenError } = await supabaseClient
                     .from('christmas_children')
                     .insert(childrenData);
 
@@ -725,7 +705,7 @@
                     if (childrenError.message && childrenError.message.includes('limit reached')) {
                         statusMessage.innerHTML = '<div class="message error">We have reached our maximum capacity for Christmas applications at this time. Thank you for your interest. Please check our Facebook page for updates.</div>';
                         submitBtn.disabled = false;
-                        submitBtn.textContent = 'Submit Application';
+                        submitBtn.textContent = submitButtonLabel;
                         statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         return;
                     }
@@ -756,7 +736,7 @@
                 statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Application';
+                submitBtn.textContent = submitButtonLabel;
             }
         }
     </script>
