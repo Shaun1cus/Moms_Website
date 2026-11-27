@@ -566,7 +566,7 @@
 
                 const childEntries = document.querySelectorAll('.child-entry');
 
-                // Check total children count (limit: 1000 children)
+                // Check total children count (limit: 2000 children)
                 const { count: totalChildrenCount, error: childCountError } = await supabaseClient
                     .from('christmas_children')
                     .select('*', { count: 'exact', head: true });
@@ -575,7 +575,7 @@
                     throw new Error('Failed to verify submission limit. Please try again.');
                 }
 
-                if (totalChildrenCount + childEntries.length > 1000) {
+                if (totalChildrenCount + childEntries.length > 2000) {
                     statusMessage.innerHTML = '<div class="message error">We have reached our maximum capacity for Christmas applications at this time. Thank you for your interest. Please check our Facebook page for updates.</div>';
                     submitBtn.disabled = false;
                     submitBtn.textContent = submitButtonLabel;
